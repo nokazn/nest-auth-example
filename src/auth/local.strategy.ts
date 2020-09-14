@@ -23,7 +23,6 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     // リクエストに割り当てられた contextId からリクエストごとにモジュールを初期化する
     const contextId = ContextIdFactory.getByRequest(request);
     const authService = await this.moduleRef.resolve(AuthService, contextId);
-    console.info(request, contextId, authService);
     // "AuthService" is a request-scoped provider
     const user = await authService.validateUser(username, password);
     if (user == null) {
