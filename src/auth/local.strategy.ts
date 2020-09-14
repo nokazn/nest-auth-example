@@ -1,18 +1,31 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ContextIdFactory, ModuleRef } from '@nestjs/core';
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { TODO } from 'src/types';
+import { User } from 'src/users/interfaces/users.interfaces';
 
 @Injectable()
 // リクエストボディの username と password プロパティを呼んで検証する
 export class LocalStrategy extends PassportStrategy(Strategy) {
-  constructor(private authService: AuthService) {
-    super();
+  constructor(private moduleRef: ModuleRef) {
+    super({
+      passReqToCallback: true,
+    });
   }
 
-  async validate(username: string, password: string): Promise<TODO> {
-    const user = await this.authService.validateUser(username, password);
+  // 第一引数に request をとれる
+  async validate(
+    request: Request,
+    username: string,
+    password: string,
+  ): Promise<Omit<User, 'password'>> {
+    // リクエストに割り当てられた contextId からリクエストごとにモジュールを初期化する
+    const contextId = ContextIdFactory.getByRequest(request);
+    const authService = await this.moduleRef.resolve(AuthService, contextId);
+    console.info(request, contextId, authService);
+    // "AuthService" is a request-scoped provider
+    const user = await authService.validateUser(username, password);
     if (user == null) {
       throw new UnauthorizedException();
     }
